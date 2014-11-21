@@ -14,7 +14,12 @@ public class NumberShortestPath {
         this.Q.buildHeap();
     }
 
-    public void computeNumberShortestPathToEachVertex(int source) {
+    /**
+     * Compute shortest path and number of it from source to each nodes
+     * @param source source node
+     * @return the graph is a applicable graph, which means, no zero or negative cycle
+     */
+    public boolean computeNumberShortestPathToEachVertex(int source) {
 
         Q.decreaseKey(source, 0);
         vertices.get(source).numPath = 1;
@@ -33,11 +38,26 @@ public class NumberShortestPath {
                 Vertex v = vertices.get(v_index);
                 int u_v_weight = weightItor.next();
 
-                if ((!v.visited) && (v.dis > (u.dis + u_v_weight))) {
+                if (!v.visited) {
+                    if (v.dis > (u.dis + u_v_weight)) {
+                        // update number of paths, because previous shortest path is no longer in path
+                        v.numPath = u.numPath;
+                        v.dis = u.dis + u_v_weight;
+                        Q.decreaseKey(v_index, v.dis);
+                        v.pred = u_index;
+                    } else if (v.dis == (u.dis + u_v_weight)) {
+                        // another path whose distance is the same with shortest path
+                        v.numPath += u.numPath;
+                    }
+                }
 
+                if (v.visited && (v.dis <= (u.dis + u_v_weight))) {
+                    // if zero or negative exists, the visited node's distance
+                    // is not larger than one of its predecessors
+                    return false;
                 }
             }
-
         }
+        return true;
     }
 }
