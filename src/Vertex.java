@@ -8,10 +8,10 @@ public class Vertex implements Comparable<Vertex> {
 
     int index = 0;
     boolean visited = false;
-    int dis = Integer.MAX_VALUE;
+    long dis = Integer.MAX_VALUE;
     int pred = 0;
 
-    int numPath = 0;
+    long numPath = 0;
 
     public Vertex(int index) {
         this.index = index;
@@ -24,6 +24,13 @@ public class Vertex implements Comparable<Vertex> {
 
     @Override
     public int compareTo(@NotNull Vertex o) {
-        return this.dis - o.dis;
+        long diff = this.dis - o.dis;
+        if (diff > 0) {
+            return 1;
+        } else if (diff < 0) {
+            return -1;
+        } else {
+            return 0;
+        }
     }
 }

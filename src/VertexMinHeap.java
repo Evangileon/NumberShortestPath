@@ -87,7 +87,7 @@ public class VertexMinHeap {
      * @param index in vertices reference
      * @param newDis new distance
      */
-    public void decreaseKey(int index, int newDis) {
+    public void decreaseKey(int index, long newDis) {
         int a = X.get(index);
 
         if (vertices.get(index).dis < newDis)

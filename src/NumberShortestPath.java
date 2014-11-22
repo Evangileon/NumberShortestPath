@@ -12,7 +12,6 @@ public class NumberShortestPath {
     public NumberShortestPath(ArrayList<Vertex> vertices) {
         this.vertices = vertices;
         this.Q = new VertexMinHeap(vertices);
-        this.Q.buildHeap();
     }
 
     /**
@@ -21,7 +20,10 @@ public class NumberShortestPath {
      * @return the graph is a applicable graph, which means, no zero or negative cycle
      */
     public boolean computeNumberShortestPathToEachVertex(int source) {
+        // build heap
+        this.Q.buildHeap();
 
+        // source
         Q.decreaseKey(source, 0);
         vertices.get(source).numPath = 1;
 
@@ -29,6 +31,11 @@ public class NumberShortestPath {
             int u_index = Q.deleteMin();
             Vertex u = vertices.get(u_index);
             u.visited = true;
+
+            if (u.index != source && u.pred == 0) {
+                // unreachable from source
+                continue;
+            }
 
             Iterator<Integer> adjItor = u.adj.iterator();
             Iterator<Integer> weightItor = u.adjWeight.iterator();
@@ -52,7 +59,7 @@ public class NumberShortestPath {
                     }
                 }
 
-                if (v.visited && (v.dis <= (u.dis + u_v_weight))) {
+                if (v.visited && (v.dis <= (u.dis + u_v_weight)) && v.index != source) {
                     // if zero or negative exists, the visited node's distance
                     // is not larger than one of its predecessors
                     return false;
@@ -66,18 +73,22 @@ public class NumberShortestPath {
         vertices.get(from).addAdj(to, weight);
     }
 
-    public void printNumShortestPath() {
-        System.out.printf("1" + " 0" + "-" + " 1"); // for node 1
+    public void printNumShortestPath(int source) {
+        //System.out.println("1" + " 0" + " -" + " 1"); // for node 1
 
-        for (int i = 2; i < vertices.size(); i++) {
+        for (int i = 1; i < vertices.size(); i++) {
             Vertex u = vertices.get(i);
 
             System.out.print(i + " ");
-            if (u.pred != 0) {
+            if (u.pred != 0 || u.index == source) {
                 System.out.print(u.dis + " ");
-                System.out.print(u.pred + " ");
+
             } else {
                 System.out.print("INF ");
+            }
+            if (u.pred != 0) {
+                System.out.print(u.pred + " ");
+            } else {
                 System.out.print("- ");
             }
             System.out.println(u.numPath);
@@ -145,7 +156,7 @@ public class NumberShortestPath {
             } else {
                 System.out.printf("%d %d %d\n", solution.vertices.get(terminator).dis, solution.vertices.get(terminator).numPath, end - start);
                 if (solution.numNodes() <= 100) {
-                    solution.printNumShortestPath();
+                    solution.printNumShortestPath(source);
                 }
             }
 
