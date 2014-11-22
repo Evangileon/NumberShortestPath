@@ -1,3 +1,4 @@
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -59,5 +60,97 @@ public class NumberShortestPath {
             }
         }
         return true;
+    }
+
+    private void addEdge(int from, int to, int weight) {
+        vertices.get(from).addAdj(to, weight);
+    }
+
+    public void printNumShortestPath() {
+        System.out.printf("1" + " 0" + "-" + " 1"); // for node 1
+
+        for (int i = 2; i < vertices.size(); i++) {
+            Vertex u = vertices.get(i);
+
+            System.out.print(i + " ");
+            if (u.pred != 0) {
+                System.out.print(u.dis + " ");
+                System.out.print(u.pred + " ");
+            } else {
+                System.out.print("INF ");
+                System.out.print("- ");
+            }
+            System.out.println(u.numPath);
+        }
+    }
+
+    public int numNodes() {
+        return vertices.size() - 1;
+    }
+
+    public static void main(String[] args) {
+        BufferedReader reader = null;
+
+        if (args.length > 0) {
+            try {
+                reader = new BufferedReader(new FileReader(args[0]));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        } else {
+            reader = new BufferedReader(new InputStreamReader(System.in));
+        }
+
+        assert reader != null;
+        try {
+            String metaLine = reader.readLine();
+            String[] meta = metaLine.split("[\\s\\t]+");
+
+            int numNodes = Integer.valueOf(meta[0]);
+            int numEdges = Integer.valueOf(meta[1]);
+            int source = Integer.valueOf(meta[2]);
+            int terminator = Integer.valueOf(meta[3]);
+
+            ArrayList<Vertex> nodeSet = new ArrayList<Vertex>(numNodes);
+            nodeSet.add(new Vertex(0)); // 0 unused
+
+            // fill node set with numNodes nodes
+            for (int i = 1; i <= numNodes; i++) {
+                nodeSet.add(new Vertex(i));
+            }
+
+            // construct
+            NumberShortestPath solution = new NumberShortestPath(nodeSet);
+
+            int count = 0;
+            String line;
+            while ((line = reader.readLine()) != null && !line.equals("")) {
+                String[] params = line.split("[\\s\\t]+");
+                int from = Integer.valueOf(params[0]);
+                int to = Integer.valueOf(params[1]);
+                int weight = Integer.valueOf(params[2]);
+
+                solution.addEdge(from, to, weight);
+                count++;
+            }
+
+            assert count == numEdges : "The number of edges claimed is not equal to actual one";
+
+            long start = System.currentTimeMillis();
+            boolean isApplicable = solution.computeNumberShortestPathToEachVertex(source);
+            long end = System.currentTimeMillis();
+
+            if (!isApplicable) {
+                System.out.println("Non-positive cycle in graph.  DAC is not applicable");
+            } else {
+                System.out.printf("%d %d %d\n", solution.vertices.get(terminator).dis, solution.vertices.get(terminator).numPath, end - start);
+                if (solution.numNodes() <= 100) {
+                    solution.printNumShortestPath();
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
