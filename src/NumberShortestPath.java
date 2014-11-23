@@ -3,7 +3,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 /**
- * Modify from Dijkstra Algorithm
+ * Modified from Dijkstra Algorithm by Jun Yu
  */
 public class NumberShortestPath {
     private VertexMinHeap Q;
@@ -62,6 +62,7 @@ public class NumberShortestPath {
                 if (v.visited && (v.dis <= (u.dis + u_v_weight)) && v.index != source) {
                     // if zero or negative exists, the visited node's distance
                     // is not larger than one of its predecessors
+                    // source excluded
                     return false;
                 }
             }
@@ -74,7 +75,6 @@ public class NumberShortestPath {
     }
 
     public void printNumShortestPath(int source) {
-        //System.out.println("1" + " 0" + " -" + " 1"); // for node 1
 
         for (int i = 1; i < vertices.size(); i++) {
             Vertex u = vertices.get(i);

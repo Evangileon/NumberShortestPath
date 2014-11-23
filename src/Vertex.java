@@ -1,4 +1,3 @@
-import com.sun.istack.internal.NotNull;
 
 import java.util.LinkedList;
 
@@ -23,7 +22,7 @@ public class Vertex implements Comparable<Vertex> {
     }
 
     @Override
-    public int compareTo(@NotNull Vertex o) {
+    public int compareTo(Vertex o) {
         long diff = this.dis - o.dis;
         if (diff > 0) {
             return 1;
