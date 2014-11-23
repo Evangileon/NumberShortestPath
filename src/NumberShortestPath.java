@@ -33,6 +33,7 @@ public class NumberShortestPath {
         s.dis = 0;
 
         LinkedList<Integer> queue = new LinkedList<Integer>();
+        // source initialize
         queue.add(source);
         s.inQueue = true;
         s.numPath = 1;
@@ -50,6 +51,7 @@ public class NumberShortestPath {
             Iterator<Integer> adjItor = u.adj.iterator();
             Iterator<Integer> weightItor = u.adjWeight.iterator();
 
+            // for each adjacent node of u
             while (adjItor.hasNext()) {
                 int v_index = adjItor.next();
                 Vertex v = vertices.get(v_index);
@@ -58,6 +60,7 @@ public class NumberShortestPath {
                 boolean v_d_changed = relax(u, v, u_v_weight);
 
                 if (v_d_changed && !v.inQueue) {
+                    // v.d changed anf v is not in queue
                     queue.add(v_index);
                     v.inQueue = true;
                 }
@@ -67,6 +70,13 @@ public class NumberShortestPath {
         return true;
     }
 
+    /**
+     * Relax path between u and v
+     * @param u node
+     * @param v node
+     * @param u_v_weight weight(u, v)
+     * @return whether v.d changed
+     */
     private boolean relax(Vertex u, Vertex v, int u_v_weight) {
 
         boolean changed = false;

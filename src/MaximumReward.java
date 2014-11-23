@@ -7,7 +7,6 @@ public class MaximumReward {
     private VertexMinHeap Q;
     private ArrayList<Vertex> vertices;
 
-
     public MaximumReward(ArrayList<Vertex> vertices) {
         this.vertices = vertices;
     }
@@ -16,7 +15,18 @@ public class MaximumReward {
         return vertices.size() - 1;
     }
 
+    /**
+     * Because all nodes are non-negative, use Dijkstra
+     * @param source node
+     */
     private void useDijkstraToFindShortestPathTree(int source) {
+        // initialize
+        for (Vertex v : vertices) {
+            v.dis = Long.MAX_VALUE;
+            v.pred = 0;
+            v.inPath = false;
+        }
+
         this.Q.buildHeap();
 
         // source
@@ -51,4 +61,35 @@ public class MaximumReward {
             }
         }
     }
-}
+
+    /**
+     * Backtrace by pred field to find the shorted path to source, mark node.inPath = true
+     * @param terminator specific node
+     * @return the number of nodes in shortest path
+     */
+    public int backtraceToFindShortestPath(int terminator) {
+        Vertex t = vertices.get(terminator);
+        Vertex v = t;
+        Vertex u;
+        t.inPath = true;
+        t.next = 0;
+        int count = 1;
+
+        while (v.pred != 0) {
+            u = vertices.get(v.pred);
+            u.inPath = true;
+            u.next = v.index;
+            v = u;
+            count++;
+        }
+
+        return count;
+    }
+
+    public int computeMaximumReward(int source) {
+        useDijkstraToFindShortestPathTree(source);
+
+
+        return 0;
+    }
+ }
