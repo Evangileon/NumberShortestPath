@@ -1,6 +1,7 @@
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 
 /**
  * Modified from Dijkstra Algorithm by Jun Yu
@@ -20,54 +21,68 @@ public class NumberShortestPath {
      * @return the graph is a applicable graph, which means, no zero or negative cycle
      */
     public boolean computeNumberShortestPathToEachVertex(int source) {
-        // build heap
-        this.Q.buildHeap();
+        // initialize
+        for (Vertex v : vertices) {
+            v.dis = Long.MAX_VALUE;
+            v.pred = 0;
+            v.inQueue = false;
+            v.count = 0;
+        }
 
-        // source
-        Q.decreaseKey(source, 0);
-        vertices.get(source).numPath = 1;
+        Vertex s = vertices.get(source);
+        s.dis = 0;
 
-        while (!Q.isEmpty()) {
-            int u_index = Q.deleteMin();
+        LinkedList<Integer> queue = new LinkedList<Integer>();
+        queue.add(source);
+        s.inQueue = true;
+        s.numPath = 1;
+
+        while (!queue.isEmpty()) {
+            int u_index = queue.remove();
             Vertex u = vertices.get(u_index);
-            u.visited = true;
+            u.inQueue = false;
 
-            if (u.index != source && u.pred == 0) {
-                // unreachable from source
-                continue;
+            if (u.count >= numNodes()) {
+                // has non-positive cycle
+                return false;
             }
 
             Iterator<Integer> adjItor = u.adj.iterator();
             Iterator<Integer> weightItor = u.adjWeight.iterator();
 
-            // for each adjacent node
             while (adjItor.hasNext()) {
                 int v_index = adjItor.next();
                 Vertex v = vertices.get(v_index);
                 int u_v_weight = weightItor.next();
 
-                if (!v.visited) {
-                    if (v.dis > (u.dis + u_v_weight)) {
-                        // update number of paths, because previous shortest path is no longer in path
-                        v.numPath = u.numPath;
-                        v.dis = u.dis + u_v_weight;
-                        Q.decreaseKey(v_index, v.dis);
-                        v.pred = u_index;
-                    } else if (v.dis == (u.dis + u_v_weight)) {
-                        // another path whose distance is the same with shortest path
-                        v.numPath += u.numPath;
-                    }
-                }
+                boolean v_d_changed = relax(u, v, u_v_weight);
 
-                if (v.visited && (v.dis <= (u.dis + u_v_weight)) && v.index != source) {
-                    // if zero or negative exists, the visited node's distance
-                    // is not larger than one of its predecessors
-                    // source excluded
-                    return false;
+                if (v_d_changed && !v.inQueue) {
+                    queue.add(v_index);
+                    v.inQueue = true;
                 }
             }
         }
+
         return true;
+    }
+
+    private boolean relax(Vertex u, Vertex v, int u_v_weight) {
+
+        boolean changed = false;
+
+        if (v.dis > (u.dis + u_v_weight)) {
+            // update number of paths, because previous shortest path is no longer in path
+            v.numPath = u.numPath;
+            v.dis = u.dis + u_v_weight;
+            v.pred = u.index;
+            changed = true;
+        } else if (v.dis == (u.dis + u_v_weight)) {
+            // another path whose distance is the same with shortest path
+            v.numPath += u.numPath;
+        }
+
+        return changed;
     }
 
     private void addEdge(int from, int to, int weight) {

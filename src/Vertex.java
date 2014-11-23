@@ -12,6 +12,9 @@ public class Vertex implements Comparable<Vertex> {
 
     long numPath = 0;
 
+    boolean inQueue = false;
+    int count = 0;
+
     public Vertex(int index) {
         this.index = index;
     }
