@@ -21,8 +21,10 @@ public class Vertex implements Comparable<Vertex> {
     boolean inPath = false;
     // next node in shortest path
     int next = 0;
-
+    // possible reward at this node
     int reward = 0;
+    // accumulated reward
+    int accumReward = 0;
 
     public Vertex(int index) {
         this.index = index;

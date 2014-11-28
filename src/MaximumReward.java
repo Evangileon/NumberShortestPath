@@ -35,8 +35,10 @@ public class MaximumReward {
         this.Q.buildHeap();
 
         // source
-        vertices.get(source).dis = 0;
+        Vertex s = vertices.get(source);
+        s.dis = 0;
         Q.decreaseKey(source, 0);
+        s.accumReward = s.reward;
 
         while (!Q.isEmpty()) {
             int u_index = Q.deleteMin();
@@ -62,6 +64,7 @@ public class MaximumReward {
                     v.dis = u.dis + u_v_weight;
                     Q.decreaseKey(v_index, v.dis);
                     v.pred = u_index;
+                    v.accumReward = u.accumReward + v.reward;
                 }
             }
         }
@@ -69,11 +72,10 @@ public class MaximumReward {
 
     /**
      * Backtrace by pred field to find the shorted path to source, mark node.inPath = true
-     * @param terminator specific node
+     * @param t specific node
      * @return total reward of nodes in shortest path
      */
-    public int backtraceToFindShortestPath(int terminator) {
-        Vertex t = vertices.get(terminator);
+    private int backtraceToFindShortestPath(Vertex t) {
         Vertex v = t;
         Vertex u;
         t.inPath = true;
@@ -104,6 +106,9 @@ public class MaximumReward {
 
         for (int v_index : start.adj) {
             Vertex v = vertices.get(v_index);
+            if (v == source) {
+                return true;
+            }
 
             if (!v.visited && !v.inPath && v != start) {
                 v.visited = true;
@@ -112,6 +117,7 @@ public class MaximumReward {
                 if (feasible) {
                     return true;
                 }
+                v.visited = false;
             }
         }
 
@@ -123,7 +129,6 @@ public class MaximumReward {
             Vertex u = vertices.get(i);
             u.inPath = false;
             u.visited = false;
-            u.reward = 0;
         }
     }
 
@@ -139,10 +144,10 @@ public class MaximumReward {
         Collections.sort(pathValueList, new Comparator<Vertex>() {
             @Override
             public int compare(Vertex o1, Vertex o2) {
-                if (o1.dis == o2.dis) {
+                if (o1.accumReward == o2.accumReward) {
                     return 0;
                 }
-                return (o1.dis - o2.dis) > 0 ? 1 : -1;
+                return (o1.accumReward - o2.accumReward) > 0 ? 1 : -1;
             }
         });
 
@@ -151,12 +156,13 @@ public class MaximumReward {
 
             Vertex u = pathValueList.get(i);
 
-            int reward = backtraceToFindShortestPath(i);
+            int reward = backtraceToFindShortestPath(u);
 
             u.visited = true;
             if (runDFSBackToSource(u, vertices.get(source))) {
                 return reward;
             }
+            u.visited = false;
         }
 
         return 0;

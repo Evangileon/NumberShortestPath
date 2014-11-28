@@ -7,12 +7,12 @@ import java.util.LinkedList;
  * Modified from Dijkstra Algorithm by Jun Yu
  */
 public class NumberShortestPath {
-    private VertexMinHeap Q;
+//    private VertexMinHeap Q;
     private ArrayList<Vertex> vertices;
 
     public NumberShortestPath(ArrayList<Vertex> vertices) {
         this.vertices = vertices;
-        this.Q = new VertexMinHeap(vertices);
+//        this.Q = new VertexMinHeap(vertices);
     }
 
     /**
