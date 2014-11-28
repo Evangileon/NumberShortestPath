@@ -22,6 +22,8 @@ public class Vertex implements Comparable<Vertex> {
     // next node in shortest path
     int next = 0;
 
+    int reward = 0;
+
     public Vertex(int index) {
         this.index = index;
     }
