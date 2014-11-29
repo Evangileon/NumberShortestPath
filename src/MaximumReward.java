@@ -96,32 +96,59 @@ public class MaximumReward {
     /**
      * Whether start node has a path back to source, without using marked nodes (inPath == true)
      * @param start node
-     * @return Whether start node has a path back to source
+     * @return -2 if no dead end, -1 if not path back to source, otherwise the maximum reward
+     *          if follow this path
      */
-    public boolean runDFSBackToSource(Vertex start, Vertex source) {
+    public int runDFSBackToSource(Vertex start, Vertex source) {
 
-        if (start == source) {
-            return true;
+//        if (start == source) {
+//            return 0;
+//        }
+
+        if (start.adj.size() == 1) {
+            // only has one edge, which means this node is a dead end
+            return -2;
         }
 
+        boolean allAdjAreDeadEnd = true;
+        int maxReward = -1;
         for (int v_index : start.adj) {
             Vertex v = vertices.get(v_index);
             if (v == source) {
-                return true;
+                return 0;
             }
 
-            if (!v.visited && !v.inPath && v != start) {
+            if (!v.hasOutlet) {
+                // skip the nodes that lead to dead end
+                continue;
+            }
+
+            if (!v.visited && v != start) {
                 v.visited = true;
                 // if the sub-path can go to source
-                boolean feasible = runDFSBackToSource(v, source);
-                if (feasible) {
-                    return true;
+                int reward = runDFSBackToSource(v, source);
+                // same direction with shortest path
+                int bonus = (v.pred == start.index) ? v.reward : 0;
+                if (reward != -2) {
+                    allAdjAreDeadEnd = false;
+                }
+                if (reward >= 0) {
+                    maxReward = Math.max(maxReward, reward + bonus);
                 }
                 v.visited = false;
             }
         }
 
-        return false;
+        if (allAdjAreDeadEnd) {
+            start.hasOutlet = false;
+            return -2;
+        }
+
+        if (maxReward >= 0) {
+            return maxReward;
+        }
+
+        return -1;
     }
 
     public void clearToInit() {
@@ -135,37 +162,9 @@ public class MaximumReward {
     public int computeMaximumReward(int source) {
         useDijkstraToFindShortestPathTree(source);
 
-        ArrayList<Vertex> pathValueList = new ArrayList<Vertex>();
-        for (int i = 1; i < vertices.size(); i++) {
-            pathValueList.add(vertices.get(i));
-        }
+        clearToInit();
 
-        // sort all nodes by their shortest distance from source
-        Collections.sort(pathValueList, new Comparator<Vertex>() {
-            @Override
-            public int compare(Vertex o1, Vertex o2) {
-                if (o1.accumReward == o2.accumReward) {
-                    return 0;
-                }
-                return (o1.accumReward - o2.accumReward) > 0 ? 1 : -1;
-            }
-        });
-
-        for (int i = pathValueList.size() - 1; i >= 0; i--) {
-            clearToInit();
-
-            Vertex u = pathValueList.get(i);
-
-            int reward = backtraceToFindShortestPath(u);
-
-            u.visited = true;
-            if (runDFSBackToSource(u, vertices.get(source))) {
-                return reward;
-            }
-            u.visited = false;
-        }
-
-        return 0;
+        return runDFSBackToSource(vertices.get(source), vertices.get(source));
     }
 
     /**

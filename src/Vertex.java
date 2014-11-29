@@ -25,6 +25,8 @@ public class Vertex implements Comparable<Vertex> {
     int reward = 0;
     // accumulated reward
     int accumReward = 0;
+    // dead end
+    boolean hasOutlet = true;
 
     public Vertex(int index) {
         this.index = index;
