@@ -99,14 +99,14 @@ public class MaximumReward {
      * @return -2 if no dead end, -1 if not path back to source, otherwise the maximum reward
      *          if follow this path
      */
-    public int runDFSBackToSource(Vertex start, Vertex source) {
-
-//        if (start == source) {
-//            return 0;
-//        }
+    public int runDFSBackToSource(Vertex start, Vertex source, boolean ignoreEdgeToSource) {
+        if (!ignoreEdgeToSource && start == source) {
+            return 0;
+        }
 
         if (start.adj.size() == 1) {
             // only has one edge, which means this node is a dead end
+            start.hasOutlet = false;
             return -2;
         }
 
@@ -114,8 +114,9 @@ public class MaximumReward {
         int maxReward = -1;
         for (int v_index : start.adj) {
             Vertex v = vertices.get(v_index);
-            if (v == source) {
-                return 0;
+
+            if (ignoreEdgeToSource && v == source) {
+                continue;
             }
 
             if (!v.hasOutlet) {
@@ -123,10 +124,10 @@ public class MaximumReward {
                 continue;
             }
 
-            if (!v.visited && v != start) {
+            if (!v.visited) {
                 v.visited = true;
                 // if the sub-path can go to source
-                int reward = runDFSBackToSource(v, source);
+                int reward = runDFSBackToSource(v, source, false);
                 // same direction with shortest path
                 int bonus = (v.pred == start.index) ? v.reward : 0;
                 if (reward != -2) {
@@ -164,7 +165,8 @@ public class MaximumReward {
 
         clearToInit();
 
-        return runDFSBackToSource(vertices.get(source), vertices.get(source));
+        //vertices.get(source).visited = true;
+        return runDFSBackToSource(vertices.get(source), vertices.get(source), true);
     }
 
     /**
