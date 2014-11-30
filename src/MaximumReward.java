@@ -9,9 +9,23 @@ public class MaximumReward {
 
     private VertexMinHeap Q;
     private ArrayList<Vertex> vertices;
+    class Edge {
+        int from;
+        int to;
+        int weight;
+
+        public Edge(int from, int to, int weight) {
+            this.from = from;
+            this.to = to;
+            this.weight = weight;
+        }
+    }
+
+    private ArrayList<Edge> edges;
 
     public MaximumReward(ArrayList<Vertex> vertices) {
         this.vertices = vertices;
+        this.edges = new ArrayList<Edge>();
     }
 
     public int numNodes() {
@@ -94,6 +108,78 @@ public class MaximumReward {
     }
 
     /**
+     * Mark all dead end vertices
+     */
+    private void proneDeadEndVertices() {
+        for (Vertex v : vertices) {
+            v.hasOutlet = true;
+        }
+
+        for (int i = 1; i <= vertices.size() - 1; i++) {
+            for (Vertex u : vertices) {
+                if (u.adj.size() == 1 || u.adj.size() == 0) {
+                    u.hasOutlet = false;
+                }
+                boolean allAdjAreDeadEnd = true;
+                int outletCount = 0;
+                for (int v_index : u.adj) {
+                    Vertex v = vertices.get(v_index);
+                    if (v.hasOutlet) {
+                        allAdjAreDeadEnd = false;
+                        outletCount++;
+                    }
+                }
+                if (allAdjAreDeadEnd || outletCount == 1) {
+                    u.hasOutlet = false;
+                }
+            }
+        }
+    }
+
+    public void runModifiedBellmanFord(int source) {
+        for (Vertex v : vertices) {
+            v.cycleReward = Long.MIN_VALUE;
+            v.cyclePred = 0;
+            v.yaCycleReward = Long.MIN_VALUE;
+            v.yaCyclePred = 0;
+        }
+
+        Vertex s = vertices.get(source);
+        s.cycleReward = s.reward;
+
+        // 0 unused
+        for (int i = 1; i < vertices.size() - 1; i++) {
+            for (Edge e : edges) {
+                Vertex from = vertices.get(e.from);
+                Vertex to = vertices.get(e.to);
+                relax(from, to);
+            }
+        }
+    }
+
+    /**
+     * Maximum relax
+     * @param u path from, or reverse
+     * @param v path to, or reverse
+     */
+    private void relax(Vertex u, Vertex v) {
+        // bonus for this step, which means, the path follow the shortest path and get the reward at v
+        // two direction processed concurrently
+        if (!u.hasOutlet || !v.hasOutlet) {
+            return;
+        }
+
+        int bonusUV = (v.pred == u.index) ? v.reward : 0;
+
+        long vCycleReward = v.cycleReward;
+        long uCycleReward = u.cycleReward;
+        if (vCycleReward < uCycleReward + bonusUV) {
+            v.cycleReward = uCycleReward + bonusUV;
+            v.cyclePred = u.index;
+        }
+    }
+
+    /**
      * Whether start node has a path back to source, without using marked nodes (inPath == true)
      * @param start node
      * @return -2 if no dead end, -1 if not path back to source, otherwise the maximum reward
@@ -160,13 +246,16 @@ public class MaximumReward {
         }
     }
 
-    public int computeMaximumReward(int source) {
+    public long computeMaximumReward(int source) {
         useDijkstraToFindShortestPathTree(source);
 
-        clearToInit();
+        //clearToInit();
 
         //vertices.get(source).visited = true;
-        return runDFSBackToSource(vertices.get(source), vertices.get(source), true);
+        proneDeadEndVertices();
+
+        runModifiedBellmanFord(source);
+        return vertices.get(source).cycleReward;
     }
 
     /**
@@ -178,6 +267,7 @@ public class MaximumReward {
     private void addEdge(int from, int to, int weight) {
         vertices.get(from).addAdj(to, weight);
         vertices.get(to).addAdj(from, weight);
+        edges.add(new Edge(from, to, weight));
     }
 
     public static void main(String[] args) {
@@ -247,7 +337,7 @@ public class MaximumReward {
             assert count == numEdges : "The number of edges claimed is not equal to actual one";
 
             long start = System.currentTimeMillis();
-            int reward = solution.computeMaximumReward(source);
+            long reward = solution.computeMaximumReward(source);
             long end = System.currentTimeMillis();
 
             System.out.printf("%d %d\n", reward, end - start);

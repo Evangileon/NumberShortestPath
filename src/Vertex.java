@@ -28,6 +28,13 @@ public class Vertex implements Comparable<Vertex> {
     // dead end
     boolean hasOutlet = true;
 
+    // cycle
+    long cycleReward = 0;
+    int cyclePred = 0;
+    // yet another cycle
+    long yaCycleReward = 0;
+    int yaCyclePred = 0;
+
     public Vertex(int index) {
         this.index = index;
     }
