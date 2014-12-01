@@ -1,4 +1,5 @@
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 
 public class Vertex implements Comparable<Vertex> {
@@ -29,11 +30,12 @@ public class Vertex implements Comparable<Vertex> {
     boolean hasOutlet = true;
 
     // cycle
+    int gainBonus = 0;
     long cycleReward = 0;
     int cyclePred = 0;
     // yet another cycle
-    long yaCycleReward = 0;
-    int yaCyclePred = 0;
+    long reverseCycleReward = 0;
+    int reverseCyclePred = 0;
 
     public Vertex(int index) {
         this.index = index;
@@ -42,6 +44,16 @@ public class Vertex implements Comparable<Vertex> {
     public void addAdj(int adjIndex, int weight) {
         adj.add(adjIndex);
         adjWeight.add(weight);
+    }
+
+    ArrayList<Integer> preds = new ArrayList<Integer>();
+
+    public void addPred(int pred) {
+        preds.add(pred);
+    }
+
+    public boolean hasPred(int u) {
+        return preds.contains(u);
     }
 
     @Override

@@ -1,13 +1,9 @@
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
+import java.util.*;
 
 
 public class MaximumReward {
 
-    private VertexMinHeap Q;
     private ArrayList<Vertex> vertices;
     class Edge {
         int from;
@@ -33,36 +29,118 @@ public class MaximumReward {
     }
 
     /**
-     * Because all nodes are non-negative, use Dijkstra
-     * @param source node
+     * Compute shortest path and number of it from source to each nodes
+     * @param source source node
+     * @return the graph is a applicable graph, which means, no zero or negative cycle
      */
-    private void useDijkstraToFindShortestPathTree(int source) {
-        this.Q = new VertexMinHeap(vertices);
-
+    public boolean computeNumberShortestPathToEachVertex(int source) {
         // initialize
         for (Vertex v : vertices) {
             v.dis = Long.MAX_VALUE;
             v.pred = 0;
+            v.inQueue = false;
+            v.count = 0;
+        }
+
+        Vertex s = vertices.get(source);
+        s.dis = 0;
+
+        LinkedList<Integer> queue = new LinkedList<Integer>();
+        // source initialize
+        queue.add(source);
+        s.inQueue = true;
+        s.numPath = 1;
+
+        while (!queue.isEmpty()) {
+            int u_index = queue.remove();
+            Vertex u = vertices.get(u_index);
+            u.inQueue = false;
+
+            if (u.count >= numNodes()) {
+                // has non-positive cycle
+                return false;
+            }
+
+            Iterator<Integer> adjItor = u.adj.iterator();
+            Iterator<Integer> weightItor = u.adjWeight.iterator();
+
+            // for each adjacent node of u
+            while (adjItor.hasNext()) {
+                int v_index = adjItor.next();
+                Vertex v = vertices.get(v_index);
+                int u_v_weight = weightItor.next();
+
+                boolean v_d_changed = relax(u, v, u_v_weight);
+
+                if (v_d_changed && !v.inQueue) {
+                    // v.d changed anf v is not in queue
+                    queue.add(v_index);
+                    v.inQueue = true;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Relax path between u and v
+     * @param u node
+     * @param v node
+     * @param u_v_weight weight(u, v)
+     * @return whether v.d changed
+     */
+    private boolean relax(Vertex u, Vertex v, int u_v_weight) {
+
+        boolean changed = false;
+
+        if (v.dis > (u.dis + u_v_weight)) {
+            // update number of paths, because previous shortest path is no longer in path
+            //v.numPath = u.numPath;
+            v.dis = u.dis + u_v_weight;
+            v.preds.clear();
+            v.addPred(u.index);
+            changed = true;
+        } else if (v.dis == (u.dis + u_v_weight)) {
+            // another path whose distance is the same with shortest path
+            //v.numPath += u.numPath;
+            v.addPred(u.index);
+        }
+
+        return changed;
+    }
+
+    /**
+     * Because all nodes are non-negative, use Dijkstra
+     * @param source node
+     */
+    private void useDijkstraToFindShortestPathTree(int source) {
+        VertexMinHeap q = new VertexMinHeap(vertices);
+
+        // initialize
+        for (Vertex v : vertices) {
+            v.dis = Long.MAX_VALUE;
+            v.preds.clear();
             v.inPath = false;
         }
 
-        this.Q.buildHeap();
+        q.buildHeap();
 
         // source
         Vertex s = vertices.get(source);
         s.dis = 0;
-        Q.decreaseKey(source, 0);
-        s.accumReward = s.reward;
+        q.decreaseKey(source, 0);
+        //s.accumReward = s.reward;
 
-        while (!Q.isEmpty()) {
-            int u_index = Q.deleteMin();
+        while (!q.isEmpty()) {
+            int u_index = q.deleteMin();
             Vertex u = vertices.get(u_index);
             u.visited = true;
 
-            if (u.index != source && u.pred == 0) {
-                // unreachable from source
-                continue;
-            }
+//            if (u.index != source && u.preds.size() == 0) {
+//                // unreachable from source
+//                continue;
+//            }
 
             Iterator<Integer> adjItor = u.adj.iterator();
             Iterator<Integer> weightItor = u.adjWeight.iterator();
@@ -74,188 +152,135 @@ public class MaximumReward {
                 int u_v_weight = weightItor.next();
 
                 if (!v.visited && (v.dis > (u.dis + u_v_weight))) {
-                    // update number of paths, because previous shortest path is no longer in path
-                    v.dis = u.dis + u_v_weight;
-                    Q.decreaseKey(v_index, v.dis);
-                    v.pred = u_index;
-                    v.accumReward = u.accumReward + v.reward;
-                }
-            }
-        }
-    }
-
-    /**
-     * Backtrace by pred field to find the shorted path to source, mark node.inPath = true
-     * @param t specific node
-     * @return total reward of nodes in shortest path
-     */
-    private int backtraceToFindShortestPath(Vertex t) {
-        Vertex v = t;
-        Vertex u;
-        t.inPath = true;
-        t.next = 0;
-        int num = t.reward;
-
-        while (v.pred != 0) {
-            u = vertices.get(v.pred);
-            u.inPath = true;
-            u.next = v.index;
-            v = u;
-            num += u.reward;
-        }
-
-        return num;
-    }
-
-    /**
-     * Mark all dead end vertices
-     */
-    private void proneDeadEndVertices() {
-        for (Vertex v : vertices) {
-            v.hasOutlet = true;
-        }
-
-        for (int i = 1; i <= vertices.size() - 1; i++) {
-            for (Vertex u : vertices) {
-                if (u.adj.size() == 1 || u.adj.size() == 0) {
-                    u.hasOutlet = false;
-                }
-                boolean allAdjAreDeadEnd = true;
-                int outletCount = 0;
-                for (int v_index : u.adj) {
-                    Vertex v = vertices.get(v_index);
-                    if (v.hasOutlet) {
-                        allAdjAreDeadEnd = false;
-                        outletCount++;
+                    if (v.dis > (u.dis + u_v_weight)) {
+                        // update number of paths, because previous shortest path is no longer in path
+                        v.dis = u.dis + u_v_weight;
+                        q.decreaseKey(v_index, v.dis);
+                        v.preds.clear();
+                        v.addPred(u_index);
                     }
                 }
-                if (allAdjAreDeadEnd || outletCount == 1) {
-                    u.hasOutlet = false;
+
+                if ((v.dis == (u.dis + u_v_weight))) {
+                    if (!v.hasPred(u_index)) {
+                        v.addPred(u_index);
+                    }
                 }
             }
         }
     }
 
-    public void runModifiedBellmanFord(int source) {
-        for (Vertex v : vertices) {
-            v.cycleReward = Long.MIN_VALUE;
-            v.cyclePred = 0;
-            v.yaCycleReward = Long.MIN_VALUE;
-            v.yaCyclePred = 0;
+    /**
+     * Backtrace from start, this procedure terminated when meet source node
+     * @param start starting node
+     * @param source s
+     */
+    private void backtraceToFindCycle(int start, int source) {
+        maxCycle = new LinkedList<Integer>();
+        maxCycleReward = new LinkedList<Integer>();
+        maxCycle.addFirst(start);
+        maxCycleReward.addFirst(vertices.get(start).gainBonus);
+
+        Vertex v = vertices.get(start);
+        Vertex u;
+
+        while (v.cyclePred != source) {
+            u = vertices.get(v.cyclePred);
+            maxCycle.addFirst(u.index);
+            maxCycleReward.addFirst(u.gainBonus);
+            v = u;
         }
 
-        Vertex s = vertices.get(source);
-        s.cycleReward = s.reward;
-
-        // 0 unused
-        for (int i = 1; i < vertices.size() - 1; i++) {
-            for (Edge e : edges) {
-                Vertex from = vertices.get(e.from);
-                Vertex to = vertices.get(e.to);
-                relax(from, to);
-            }
-        }
+        maxCycle.addFirst(source);
+        maxCycleReward.addFirst(vertices.get(source).reward);
     }
 
+    long maxReward = Long.MIN_VALUE;
+    LinkedList<Integer> maxCycle = new LinkedList<Integer>();
+    LinkedList<Integer> maxCycleReward = new LinkedList<Integer>();
+
     /**
-     * Maximum relax
-     * @param u path from, or reverse
-     * @param v path to, or reverse
+     * Perform DFS to find all cycles
+     * @param start start node
+     * @param parent parent of start node
+     * @param source s
+     * @param curReward reward from source to start node
      */
-    private void relax(Vertex u, Vertex v) {
-        // bonus for this step, which means, the path follow the shortest path and get the reward at v
-        // two direction processed concurrently
-        if (!u.hasOutlet || !v.hasOutlet) {
+    private void depthFirstSearch(int start, int parent, int source, long curReward) {
+        Vertex u = vertices.get(start);
+
+        if (start == source) {
+
+            // found a cycle
+            if (maxReward < curReward) {
+                maxReward = curReward;
+                backtraceToFindCycle(start, source);
+            }
             return;
         }
 
-        int bonusUV = (v.pred == u.index) ? v.reward : 0;
+        for (int v_index : u.adj) {
+            if (v_index == parent) {
+                // ignore the the node previously accessed
+                continue;
+            }
 
-        long vCycleReward = v.cycleReward;
-        long uCycleReward = u.cycleReward;
-        if (vCycleReward < uCycleReward + bonusUV) {
-            v.cycleReward = uCycleReward + bonusUV;
-            v.cyclePred = u.index;
+            Vertex v = vertices.get(v_index);
+            // follow the shortest path?
+            int bonus = (v.hasPred(u.index)) ? v.reward : 0;
+
+            if (!v.visited || v_index == source) {
+                v.visited = true;
+                v.cyclePred = u.index;
+                // bonus gained this step
+                v.gainBonus = bonus;
+                depthFirstSearch(v.index, u.index, source, curReward + bonus);
+                // rollback
+                v.gainBonus = 0;
+                v.cyclePred = 0;
+                v.visited = false;
+            }
         }
     }
 
     /**
-     * Whether start node has a path back to source, without using marked nodes (inPath == true)
-     * @param start node
-     * @return -2 if no dead end, -1 if not path back to source, otherwise the maximum reward
-     *          if follow this path
+     * Traverse all possible cycles to find maximum reward cycle
+     * @param source s
      */
-    public int runDFSBackToSource(Vertex start, Vertex source, boolean ignoreEdgeToSource) {
-        if (!ignoreEdgeToSource && start == source) {
-            return 0;
+    public void runCycleEnumerate(int source) {
+        for (Vertex v : vertices) {
+            v.visited = false;
         }
 
-        if (start.adj.size() == 1) {
-            // only has one edge, which means this node is a dead end
-            start.hasOutlet = false;
-            return -2;
-        }
+        Vertex s = vertices.get(source);
+        s.visited = true;
+        long curReward = s.reward;
 
-        boolean allAdjAreDeadEnd = true;
-        int maxReward = -1;
-        for (int v_index : start.adj) {
+        for (int v_index : s.adj) {
             Vertex v = vertices.get(v_index);
-
-            if (ignoreEdgeToSource && v == source) {
-                continue;
-            }
-
-            if (!v.hasOutlet) {
-                // skip the nodes that lead to dead end
-                continue;
-            }
+            // follow the shortest path?
+            int bonus = (v.hasPred(s.index)) ? v.reward : 0;
 
             if (!v.visited) {
                 v.visited = true;
-                // if the sub-path can go to source
-                int reward = runDFSBackToSource(v, source, false);
-                // same direction with shortest path
-                int bonus = (v.pred == start.index) ? v.reward : 0;
-                if (reward != -2) {
-                    allAdjAreDeadEnd = false;
-                }
-                if (reward >= 0) {
-                    maxReward = Math.max(maxReward, reward + bonus);
-                }
+                v.cyclePred = s.index;
+                // bonus gained this step
+                v.gainBonus = bonus;
+                depthFirstSearch(v.index, s.index, source, curReward + bonus);
+                // rollback
+                v.gainBonus = 0;
+                v.cyclePred = 0;
                 v.visited = false;
             }
-        }
-
-        if (allAdjAreDeadEnd) {
-            start.hasOutlet = false;
-            return -2;
-        }
-
-        if (maxReward >= 0) {
-            return maxReward;
-        }
-
-        return -1;
-    }
-
-    public void clearToInit() {
-        for (int i = 1; i < vertices.size(); i++) {
-            Vertex u = vertices.get(i);
-            u.inPath = false;
-            u.visited = false;
         }
     }
 
     public long computeMaximumReward(int source) {
         useDijkstraToFindShortestPathTree(source);
+        //computeNumberShortestPathToEachVertex(source);
 
-        //clearToInit();
-
-        //vertices.get(source).visited = true;
-        proneDeadEndVertices();
-
-        runModifiedBellmanFord(source);
-        return vertices.get(source).cycleReward;
+        runCycleEnumerate(source);
+        return maxReward;
     }
 
     /**
@@ -341,6 +366,29 @@ public class MaximumReward {
             long end = System.currentTimeMillis();
 
             System.out.printf("%d %d\n", reward, end - start);
+
+            Iterator<Integer> itor = solution.maxCycle.iterator();
+            Iterator<Integer> itorReward = solution.maxCycleReward.iterator();
+
+            HashSet<Integer> set = new HashSet<Integer>();
+
+            while (itor.hasNext()) {
+                int v_index = itor.next();
+                int v_reward = itorReward.next();
+                if (set.contains(v_index) && v_index != source) {
+                    System.out.println("error");
+                    break;
+                }
+                set.add(v_index);
+                Vertex v = solution.vertices.get(v_index);
+                System.out.println(v_index + " " + v_reward);
+            }
+
+//            System.out.println("Print number of preds");
+//
+//            for (Vertex v : solution.vertices) {
+//                System.out.println(v.index + " " + v.preds.size() + " " + Arrays.toString(v.preds.toArray()));
+//            }
 
 //            if (!isApplicable) {
 //                System.out.println("Non-positive cycle in graph.  DAC is not applicable");
